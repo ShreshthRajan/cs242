@@ -17,7 +17,7 @@ plt.ylabel('Runtime (nanoseconds)')
 plt.title('Matrix Multiplication Runtime Comparison')
 plt.legend()
 plt.grid(True, alpha=0.3)
-# Linear scales as requested
+# Linear scales 
 
 plt.tight_layout()
 plt.savefig('mmm_runtime_plot.png', dpi=300, bbox_inches='tight')
