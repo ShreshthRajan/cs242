@@ -1,0 +1,297 @@
+\documentclass[a4 paper]{article}
+\usepackage[inner=2.0cm,outer=2.0cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage[rgb]{xcolor}
+
+\usepackage{amsgen,amsmath,amstext,amsbsy,amsopn,tikz,amssymb}
+\usepackage[ruled, vlined, noend]{algorithm2e}
+
+\usepackage{enumitem}
+% \setlength{\itemsep}{0pt plus 0pt}
+
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{subcaption}
+\usepackage{verbatim}
+\usepackage{booktabs}
+
+\usepackage[colorlinks=true, urlcolor=blue,  linkcolor=blue, citecolor=blue]{hyperref}
+\hypersetup{
+    pdfauthor={CS2420},
+    pdftitle={CS2420 (Fall 2025) PSet 3: Language Model Assisted Development},
+    pdfkeywords={CS2420},
+    pdfcreator={PDFLaTeX},
+    pdfproducer={PDFLaTeX},
+}
+\usepackage[nameinlink]{cleveref}
+
+\usepackage{minted}
+\usemintedstyle{vs}
+
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{section}
+
+\newcommand{\homework}[7]{
+   \pagestyle{myheadings}
+   \thispagestyle{plain}
+   \newpage
+   \setcounter{page}{1}
+   \noindent
+   \begin{center}
+   \framebox{
+    \vbox{\vspace{2mm}
+    \hbox to 6.28in { {\bf Harvard CS 2420:~Computing at Scale (Fall 2025) \hfill {\small (#2)}} }
+       \vspace{6mm}
+       \hbox to 6.28in { {\Large \hfill #1  \hfill} }
+       \vspace{6mm}
+       \hbox to 6.28in { {\it Instructor: {\rm #3} \hfill \textbf{Team}: {\rm #5}
+       %, Harvard ID:
+       {\rm #6}} }
+       \hbox to 6.28in { {\hfill \it 
+       %Your teammates: 
+       {\rm #7}  }}
+      \vspace{2mm}}
+   }
+   \end{center}
+   \markboth{#5 -- #1}{#5 -- #1}
+   \vspace*{4mm}
+}
+
+\newcommand{\problem}[2]{~\\\fbox{\textbf{Part #1}}\hfill (#2 points)\newline\newline}
+\newcommand{\subproblem}[1]{~\newline\textbf{(#1)}}
+\newcommand{\solution}{~\newline\textbf{\textit{(Solution)}} }
+\newcommand{\pya}[1]{\mintinline{python}{#1}}
+\newcommand{\bigO}[1]{$\mathcal{O}(#1)$}
+\newcommand{\bigo}[1]{\mathcal{O}\left(#1\right)}
+
+\let\SavedIndent\indent
+\protected\def\indent{
+    \begingroup
+        \parindent=\the\parindent
+        \SavedIndent
+    \endgroup
+}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+\homework{Problem Set 3 (PSet 3): Language Model Assisted Development}{Due: 2025/10/18 at 11:59PM EST}{H.T. Kung}{}
+{
+Name-1, Name-2, Name-3, Name-4
+}
+{}{}
+
+\begin{center}
+\textbf{Please include the full names of all team members in your submission.}
+\end{center}
+
+\section*{Introduction}
+\subsection*{Assignment Objectives}
+The objectives of this assignment are to:
+\begin{itemize}
+    \item Provide hands-on experience with various language models (LMs). 
+    \item Explore strengths and weaknesses of LMs in debugging and programming workflows.
+\end{itemize}
+
+Important note: this assignment is intended to be an open-ended exercise.
+If a model suggests or implements an objectively incorrect solution, we encourage documenting and analyzing the outcome!
+We hope this will be a useful exercise to increase your familiarity and comfort with LMs in a technical setting.
+
+\subsection*{Python Notebook and Colab}
+The code will be provided as an interactive Python notebook on Canvas, along with this handout.
+You can run it on \href{https://colab.research.google.com/}{Google Colab} or locally (e.g., with Jupyter or VSCode) if you wish.
+
+\subsection*{Language Model Access}
+For this assignment, we recommend using the \href{https://www.huit.harvard.edu/ai-sandbox}{Harvard AI Sandbox}, which provides access to a variety of models, including OpenAI's GPT-4, Anthropic's Claude, and Meta's LLama.
+We encourage exploring multiple model families (e.g., LLama vs Claude), generations (e.g., GPT-4 vs GPT-5) and sizes (e.g., GPT-4o vs GPT-4o mini).\\
+
+Additionally, \href{https://colab.research.google.com/}{Google Colab} allows direct interaction with the Gemini model within their workspace.
+You are welcome to use this feature as part of your assignment, but make sure to clearly annotate and document your interactions (i.e., prompts, responses, code changes).\\
+
+Given the resource demands of language models, we will not require you to run the models locally.
+However, if you have the ability to do so, you are more than welcome to experiment with them!
+You may consider using libraries/tools such as \href{https://huggingface.co/docs/transformers/en/llm_tutorial}{HuggingFace Transformers}, \href{https://ollama.com/}{Ollama}, or \href{https://lmstudio.ai/.}{LM Studio}.
+Please note the course staff will \textbf{not} be able to help troubleshoot locally run LMs, and insufficiently capable LMs may not yield useful outputs.
+
+\subsection*{Prompting and Documentation}
+
+For all parts of this assignment, please clearly document:
+\begin{itemize}
+    \item The LM being used.
+    \item Your provided prompt(s).
+    \item The LM output(s).
+\end{itemize}
+
+Due to the nature of LMs, there is no \textit{singular} best solution.
+If you find a working prompt right away, you may instead ablate portions of the working prompt and report observations based on those changes.
+When working with the code, it is acceptable to manually identify issues first, and then work to develop prompts that help LMs specifically isolate and tackle the issues.
+
+\newpage
+\section*{Assignment Overview}
+\label{sec:ip_ai}
+The Python code provided is intended to first generate a list of prime numbers, where their cube is less than or equal to some integer $N$. 
+That is, first find the set $S$:
+
+\[
+S = \{x \in \mathcal{Z} | x>0 \wedge x^3 \leq N\}
+\]
+
+Then, it should return up to the $K$ largest values of $S$, as well as the actual number of primes returned:
+
+A few helper functions are included for primality testing and generating prime numbers.
+The docstrings define the expected inputs/outputs of each function, but there are bugs in the code and the implementation is not optimized.
+Fully corrected, the outputs will match the expected test comments and the code will run significantly faster.
+If an LM suggests a better algorithm or approach, you are more than welcome to adopt it.\\
+
+Note: the \texttt{assert} statements at in the \textit{Testing and Validation} section of the Python notebook should not be modified.
+The code can be considered functionally correct once all assertions pass.
+
+\subsection*{Assignment Parts}
+\begin{itemize}
+    \item Part 1: Given code, identify correction and optimization opportunities using an LM.
+    \item Part 2: Develop a solution for the identified issues using an LM.
+    \item Part 3: Iterate on prompts and explorations in Tasks 1 and 2 as needed, and develop a personal workflow for additional LMs.
+    \item Part 4: Manipulate or subvert LMs via promptings to yield incorrect outputs.
+    \item Part 5: Discuss strengths and weaknesses of LMs, what contributes to effective utilization and prompting, and how to formulate a clear use case. (\textbf{Do not} use LMs for this portion!)
+\end{itemize}
+
+
+\newpage
+\problem{1}{10}
+\textbf{Diagnosing Code.}
+Use an LM of your choice to identify \textit{any} parts of the code to improve (e.g., incorrect functionality, performance issues, incorrect documentation, etc.).
+While something as simple as
+\begin{center}
+``Is there anything wrong with this code? \textit{[Code]}''
+\end{center}
+is enough for some models, please experiment with different prompts to see what works best!
+
+\begin{itemize}
+    \item Document at least one issue identified by an LM, as well as the prompt you used to identify said issue(s). If an LM response includes multiple issues, modify the prompt to explicitly target individual issues.
+    \item Was there an issue the LM did \textit{not} find at first?
+\end{itemize}
+
+\solution{}
+
+\fbox{\parbox{\textwidth}{
+\begin{center}
+\textit{Example Writeup}\\
+(Please use this format for your writeup.)
+\end{center}
+
+\textbf{Model:} \textit{HelpfulGPT-9001}\\
+\textbf{Prompt:} Validate the functionality of \texttt{DownloadRAM}...\\
+\textbf{Response:} Sure! Let me help you with that...\\
+\textbf{Found:} Function \texttt{DownloadRAM} did not download RAM, due to a condition error in the \textit{for} loop, caused by...\\
+
+\textbf{Model:} \textit{NotSoHelpfulGPT-8001}\\
+
+\textbf{Missed:} There was a incorrect parameter type in the function \texttt{PrintMoney}...
+}}\\
+
+\problem{2}{20}
+\textbf{Fixing Code.}
+Using the same LM that identified your reported issue(s) in Part 1, solve or improve the code based on the information you obtain.
+Try additional prompts or continuations (e.g., providing more details, asking for clarification or justification, etc.) and record your observations.
+\begin{itemize}
+    \item Develop a solution to reported problem for Part 1. Document the prompt you used to obtain the solution. Make sure to explain how the solution works.
+    
+    \item Try at least 2 additional prompts or continuations (e.g., by adding or removing instructions, details, provided examples) to further improve or correct the proposed solution.
+    Explain how the prompt was changed and how it impacted the the LM responses.
+\end{itemize}
+
+% \solution{}
+
+\problem{3}{20}
+\textbf{Same But Different.}
+Pick two other LMs apart from the one used already in Parts 1 and 2.
+Using each LM, identify a \textit{different} issue (you might be able to create more targeted prompts based information from other LMs).\\
+
+For each of the two additional LMs:
+\begin{itemize}
+    \item Document the issue, as well as the prompt used to identify it (ala Part 1).
+    \item Resolve the issue 
+    (ala Part 2).
+    \item Were there specific issues each LM did \textit{not} find?
+\end{itemize}
+
+\problem{4}{15}
+\textbf{Poking Holes.}
+Try to prompt LMs into providing an incorrect solution.
+
+\begin{itemize}
+    \item Try to subvert at least 2 different LMs with up to 5-6 prompts/follow-ups each (fewer prompts are fine if you are successful). Document all prompts and responses.
+    \item Were you able to successfully ``confuse'' or ``trick'' the LM?
+\end{itemize}
+
+% \solution{}
+
+
+\newpage
+\problem{5}{35}
+\textbf{Reflection and Process Documentation.}
+Now that you have had some hands-on experience with LMs in programming, we want you to consider when LMs can be useful, as well as when they may be ineffectual.
+\begin{center}
+\textbf{Please do not use LMs to come up with responses for this part of the assignment.\\
+The responses here should be your own thoughts, observations, and explanations.}
+\end{center}
+
+
+Please answer the following questions about Parts 1-3, with supporting explanations/arguments:
+\begin{itemize}
+    \item Which LM was the most helpful or easiest to prompt, and on what task? \textbf{(30 words max)}
+    \item Were there any incorrect suggestions from an LM? \textbf{(30 words max)}
+    \item Were there any tasks you felt you could do better or more efficiently with an LM? \textbf{(30 words max)}
+    \item Were there any tasks you felt you could do more efficiently without an LM? \textbf{(30 words max)}
+    \item What would you consider ``essential'' for effective prompting? Elaborate on prompting styles or specific phrasings that made LM responses more effective or robust. \textbf{(100 words max)}
+    
+\end{itemize}
+
+Please answer the following questions about Part 4, with supporting explanations/arguments:
+\begin{itemize}
+    \item Were there are any strategies you employed in subverting the LM? \textbf{(50 words max)}
+    \item Which LM did you feel was easiest to manipulate, and why? \textbf{(30 words max)}
+
+\end{itemize}
+
+\noindent\rule{\textwidth}{1pt}
+
+Feel free to note down any additional insights or comments here, as well as any questions you may have.
+Suggestions and feedback for this assignment are greatly appreciated!
+
+% \solution{}
+
+\newpage
+\section*{Submitting the Assignment}
+
+Only \textbf{one submission per team} is needed.
+Your final submission should be a \texttt{.zip} archive named with a \texttt{CS2420\_FA25\_PSet3\_} prefix followed by each team member's name separated by two underscores.\\
+
+\noindent
+Example filename: \texttt{CS2420\_FA25\_PSet3\_Name1\_\_Name2\_\_Name3\_\_Name4.zip}\\
+
+
+\noindent
+The archive should contain:
+\begin{itemize}
+    \item PDF write-up
+    \item Python notebook
+    \item Any other relevant code (e.g., LM-generated snippets)
+    \item Text files or PDFs containing the complete inputs to and outputs from of the generative AI tools used (e.g., exported ChatGPT logs).
+\end{itemize}
+
+\subsection*{Write-up}
+Written responses should be contained within a single PDF document.
+(\LaTeX~is highly recommended!)
+Responses and any figures should clearly indicate which part is being addressed.
+The write-up must contain the full names of all team members.
+
+% \subsection*{Code}
+% You should include \textbf{all} files that were provided, but with the changes you made.
+% Additionally, you must include your graphing code and timing data for Part 4.3.
+
+\end{document}
