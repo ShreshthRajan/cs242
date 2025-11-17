@@ -11,6 +11,24 @@ You need to run 3 experiments total:
 
 Total GPU time: ~6 hours
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ==========================================
 EXPERIMENT 1: GET 32-BIT BASELINE
 ==========================================
