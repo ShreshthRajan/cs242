@@ -1,0 +1,423 @@
+What is Distributed Data Parallel (DDP) in one line?........Each GPU holds a full model copy, trains on its own mini-batch, then AllReduce-averages gradients each iteration to keep models in sync.
+In DDP, do GPUs transmit full weights or just gradients each step?........Gradients only (via collectives like AllReduce); weights are updated locally after the reduction.
+DDP correctness requirement on data........Mini-batches across GPUs should be different (sharded) but drawn from the same distribution; shuffling across epochs helps generalization.
+Q3 Q1 b: In DDP, each GPU must receive gradients from all other GPUs in each forward-and-backward iteration. Explain how it works........True. implementations use collectives (e.g., ring/tree AllReduce), not explicit N−1 pairwise receives per GPU.
+Quiz 3 Q1a — "In DDP, multiple GPUs use copies of the same model on different batches."........True.
+Define arithmetic intensity (roofline).........see image
+Quiz 2 Q1a — "At the ridge point, alpha = Peak FLOP/s / Peak BW........True. (Ridge = compute roof intersects bandwidth roof.)
+Quiz 2 Q1b — "Ridge moves right if I/O bandwidth decreases."........False. (Lower BW ⇒ smaller \alpha_\text{ridge} ⇒ ridge moves left.)
+Quiz 2 Q1c — "We can raise the flat (BW-bound) roofline via scheduling w/o HW change."........False. (Flat part is physically limited by external BW.)
+Backprop storage rule during training........Keep activations from the forward pass until their gradients are computed in the backward pass. Deeper layer activations are kept longer.
+Quiz 2 Q2a — "Deeper layer activations are kept longer than early ones."........False
+Quiz 2 Q2b1 — "Grad for an earlier weight uses the corresponding earlier activation."........True. (Weight-grad = upstream-grad × input/activation.)
+Quiz 2 Q2b2 — "Grad for a deeper weight uses its layer's activation but not earlier ones."........True.
+Uniform Quantization (UQ) — define & pipeline........Partition a known dynamic range into equal-width intervals (scale factor sf); linearly map FP32 → integers (e.g., INT8 in [−128,127]) per layer/tensor.
+In UQ, what bounds the maximum quantization error?........The interval length = sf (half-interval for nearest rounding).
+Logarithmic Quantization (LQ) — key difference........Step size scales with magnitude; error scales with |x|, suiting wide dynamic ranges. (Contrast with UQ's constant step.)
+Quiz 3 Q2a — "Increase bit-width by 2 bits ⇒ max UQ error halves (≈×0.5), not quarters."........True. (Twice as many levels per sign half; interval length halves.)
+Quiz 3 Q2b — "Under LQ, scale factor increases with |x|."........False. (LQ's effective step grows with magnitude; sf is not dynamically inflated per-value.)
+Nearest rounding (nr) bias........Deterministic mapping to the same integer can cause systematic bias (e.g., identical rounded gradients across steps).
+Stochastic rounding (sr) — rule & expectation........Round to adjacent integers with probabilities ∝ distance
+Fast sr implementation........Add pseudorandom r { -0.5,0.5) to x, then nearest-round x+r (avoids divisions/multiplies).
+Define swamping (catastrophic cancellation)........When adding two normalized FP numbers with very different exponents, the small mantissa shifts out, losing significance.
+Quiz 3 Q3a — "Swamping is reduced when exponents are similar."........True. (Less shifting/alignment loss.)
+Quiz 3 Q3b — "Increasing mantissa bits reduces swamping probability."........False. (Root cause is exponent gap; more mantissa helps precision but not the alignment loss.)
+Quiz 3 Q3c — "Different signs can prevent swamping."........True. (Partial cancellation reduces effective magnitude mismatch.)
+Pruning — purpose & big picture........Remove low-importance weights to shrink model, cut compute/memory, often with minimal accuracy loss.
+Why magnitude pruning often works........Weight distributions are bell-shaped due to L2 decay & normalization; many near-zero weights.
+Train-Prune-Retrain loop........Train dense → prune small-magnitude weights → retrain survivors; iterate with tuned thresholds.
+Unstructured vs structured sparsity........Unstructured: arbitrary zeros (fine-grain, HW-unfriendly). Structured: remove filters/channels/blocks (HW-friendly).
+Why unstructured sparsity wastes systolic array cells........Weight-stationary arrays still allocate PEs for zero weights → idle cycles unless compacted.
+Column combining (systolic arrays)........Pack sparse columns into denser ones to reduce idle PEs and improve utilization.
+Structured filter pruning criterion........Remove filters with small L_1/L_2 norms to shrink channels while preserving accuracy.
+N:M structured sparsity — define & hardware link........In every block of M consecutive weights, at most N non-zeros (e.g., 2:4, 4:8); fits Sparse Tensor Cores and yields ~2× speedup on supported HW.
+Sensitivity & thresholds........Early conv layers are more accuracy-sensitive; tune per-layer thresholds (grid search) to avoid sharp drops.
+Lottery Ticket Hypothesis (LTH)........A small subnetwork ("winning ticket") exists that, when reset to its initial weights and trained in isolation, can match dense performance.
+Finding winning tickets (rewinding)........Train a bit → prune → reset remaining weights to initial values → retrain; repeat; can identify tickets early.
+LTH caveat........Winning tickets often yield unstructured sparsity — additional heuristics are needed for structured subnetworks.
+Knowledge Distillation (KD) — high-level........Train a student to match a teacher's soft outputs (logits/softmax) to compress knowledge without copying weights.
+KD dual-loss formula (concept)........
+Softmax temperature T>1 — purpose........Softens distributions to reveal dark knowledge (class relations); larger T exposes similarities the student can learn.
+KD practicals (α and T)........Set α to balance hard/soft losses; choose T (1-20 typical) — too large for a tiny student can overwhelm capacity.
+KD limitations & TA distillation........Over-large teacher vs tiny student can hurt; use Teacher Assistant(s) to bridge the gap (multi-stage distillation).
+KD use cases........Compress ensembles → single student; cross-architecture distillation (e.g., CNN → decision tree) for interpretability.
+MobileNet — depthwise separable convolution (DSC)........Replace standard 3×3×M×N with (depthwise 3×3×M) + (pointwise 1×1×M×N) for big param/compute savings.
+DSC parameter count vs standard (for N filters, M channels)........
+Pointwise 1×1 role in DSC........Mixes information across channels after channel-wise spatial filtering.
+Low-rank view of separable kernels........A 3×3 rank-1 kernel uses 6 params (outer product) vs 9; many natural image patches are low-rank, enabling accuracy with fewer params.
+Shift operator (zero-FLOP spatial mixing)........Replace depthwise conv with spatial shifts per channel followed by a 1×1 conv — zero parameters/FLOPs in the shift.
+Approximate MMM for fixed, narrow weight matrices........Cluster row-features into K centroids offline; precompute centroid·weight tables; online replace a\cdot b with nearest-centroid lookup c\cdot b.
+Approximate MMM — offline/online split........Offline: K-means + LUTs; Online: find nearest centroid + table lookup per column b_j.
+LoRA — what is it?........
+LoRA vs SVD intuition........Like an SVD low-rank approximation, LoRA learns a compact rank-r subspace for updates instead of full dense deltas
+LECTURE 1 — COURSE OVERVIEW & AI BASICS........
+What is "General Special Computing"?........Building special-purpose AI accelerators (GPU, TPU, CIM) for general workloads like LLMs.
+Why is AI considered self-improving?........Because AI models generate synthetic data and feedback loops to train stronger AI systems.
+Define an AI model in one line.........A parameterized function mapping inputs → outputs (e.g., tokens → probabilities).
+Difference between model training and inference.........Training = optimize parameters via loss; Inference = apply fixed weights to predict.
+Why are GPUs and TPUs used for AI training?........They offer massive parallel compute and high memory bandwidth for tensor ops.
+What is the core goal of CS242?........To understand hardware and system optimizations for scaling AI model training.
+Explain value scaling on slide 47.........Map x ∈ [MIN, MAX] → [−1, 1] by x′ = 2·(x−MIN)/(MAX−MIN) − 1.
+What is quantization?........Representing values with fewer bits (e.g., FP8 vs FP16) to save memory and energy.
+Quiz 1 Q1a — Is w = [707, 359, 9] → [0.414, −0.282, −0.982] correct?........True ✅.
+Quiz 1 Q1b — w = [192, 835, 763] → [−0.416, 0.372, 0.526]?........True ✅.
+Quiz 1 Q1c — w = [684, 559, 629] → [0.368, 0.138, 0.648]?........True ✅.
+Quiz 1 Q1d — w = [723, 277, 754] → [0.446, −0.446, 0.508]?........True ✅.
+⸻........
+LECTURE 2 — CNN → MMM → SYSTOLIC ARRAYS → SIMD → TRANSFORMERS........
+What does a 3×3×d conv filter do?........Slides over h×w×d input and computes dot-products to form feature maps.
+What determines # of output feature maps?........# filters, not stride.
+Changing stride 3 → 2 affects what?........Smaller stride → more overlaps → ~2× more ops (True in Quiz Q2a).
+Quiz 1 Q2a — Stride 3→2 incurs 2× more ops?........True ✅.
+Quiz 1 Q2b — Stride 3→2 incurs 1.5× more ops?........True ✅ (approximation depends on padding).
+Quiz 1 Q2c — Same # feature maps after stride change?........True ✅.
+Quiz 1 Q2d — Preceding layer has d filters?........True ✅ (it must match input depth).
+im2col purpose........Linearize conv patches so convolution → matrix multiplication (MMM).
+MVM vs MMM bandwidth difference........MMM reuses tiles → high α; MVM low reuse → low α.
+Define a weight-stationary systolic array.........Weights fixed in PEs; inputs stream up; partial sums move right.
+Systolic PE equation........y_out = y_in + w·x_in.
+Why is systolic array efficient?........Exploits local data movement and temporal reuse → minimal global traffic.
+FLIP TO QUESTION; THIS IS ANSWER
+
+
+
+From the TOP of array........A) Results are output from the right side of the systolic array, as shown by diagram (a) above.
+
+B)
+Results are output from the top side of the systolic array, as shown by diagram (b) above.
+SIMD stands for and means?........Single Instruction Multiple Data — same instruction on multiple data lanes.
+TPU uses what architecture?........2-D weight-stationary systolic array with on-chip SRAM buffers.
+⸻........
+LECTURE 3 — MEMORY HIERARCHY & ROOFLINE MODEL........
+Define arithmetic intensity (α).........α = CT / MB = compute throughput ÷ memory bandwidth.
+Why increase α?........Higher α → more reuse → closer to compute roof → better performance.
+MMM vs MVM α........MMM: O(n); MVM: O(1). MMM has higher reuse.
+Name two ways to increase α.........(1) Larger local memory (SRAM), (2) Clever scheduling for reuse.
+Explain data reuse via tiling.........Divide matrices into blocks that fit SRAM → reuse each tile many times.
+Roofline model axis labels.........x: Arithmetic Intensity (α); y: Performance (GFLOP/s).
+Interpret ridge point on roofline.........Threshold α where computation becomes compute-bound instead of IO-bound.
+Equation for achievable throughput.........CT = min( peak compute, α × MB ).
+Define memory wall.........CPU/GPU performance limited by DRAM bandwidth vs compute rate.
+Why SRAM helps bypass memory wall?........It offers low-latency, high BW local storage for reuse.
+Describe CAKE scheduling.........Optimizes tile shape & loop order to keep α constant and maximize reuse.
+Block shaping intuition.........Fatter tiles → same MB but higher CT → higher α.
+What does CT = α · MB imply for design?........Either pay for more bandwidth or engineer for higher α (reuse).
+⸻........
+LECTURE 4 — TRAINING, BACKPROP, NORMALIZATION, HPC........
+Gradient descent update rule.........wₜ₊₁ = wₜ − η ∇L(wₜ).
+Why a minus sign in GD?........Move opposite the gradient to minimize loss.
+Forward pass vs Backward pass.........Forward computes activations; Backward computes gradients via chain rule.
+What do we store in forward pass?........Activations needed later for backward gradient computation.
+What can we discard in backward pass?........Activation values once their gradients are computed.
+Chain rule used in backprop?........(f∘g)′(x) = f′(g(x)) · g′(x).
+Define output gradients (∇Z₄).........Grad of loss w.r.t. layer output.
+Define weight gradients (∇W₃).........Grad of loss w.r.t. weights — used for update.
+Define input gradients (∇Z₂).........Grad of loss w.r.t. layer input — propagated to previous layer.
+Derivative of ReLU.........1 if x > 0, else 0.
+Derivative of Sigmoid.........σ′(x) = σ(x) (1 − σ(x)).
+In backward pass, which matrices are transposed?........Weight and activation matrices (Wᵀ and Aᵀ).
+BatchNorm vs LayerNorm.........BatchNorm normalizes across batch samples; LayerNorm across features.
+Why use normalization?........Stabilizes training, reduces covariate shift, allows larger learning rates.
+What are typical GD variants?........SGD, Mini-batch SGD, Momentum, Adam.
+When does learning converge?........When ∇L ≈ 0 and updates become small.
+How to improve convergence speed?........Adaptive η, momentum, and normalization layers.
+Backprop and HPC connection.........Express backprop as matrix multiplications to use systolic arrays and SIMD.
+⸻........
+FINAL FORMULAS & LAWS CHEAT BLOCK........
+Scaling formula........
+Arithmetic intensity........α = CT / MB.
+Roofline relation........CT = min(peak CT, α·MB).
+Gradient Descent........wₜ₊₁ = wₜ − η∇L(wₜ).
+Sigmoid derivative........σ′(x) = σ(x)(1 − σ(x)).
+ReLU derivative........ReLU′(x) = 1 if x > 0 else 0.
+Systolic PE rule........y_out = y_in + w·x_in
+⸻........
+........
+What are A and B in Approximate MMM?........A is a tall data matrix whose rows \mathbf{a}^T are feature vectors from input samples; B is a fixed narrow weight matrix whose columns \mathbf{b}_j are classifier weight vectors or learned filters.
+What does a dot b represent in this context?........A dot product between one input feature vector and one weight column, typically the pre-activation value before a Softmax or FC layer.
+What are the centroids c_1,.... ,c_K?........Representative cluster centers obtained by applying K-means to rows of A; each centroid c_i approximates similar feature vectors.
+What is K in Approximate MMM?........The number of clusters (centroids). Typical choice: close to the number of classes (e.g., K≈10 for CIFAR-10) or found via grid search if unknown.
+Explain the offline phase of Approximate MMM.........Offline: cluster all sample features into K centroids; pre-compute c_i·b_j for every centroid c_i and every column b_j of B; store results in lookup tables.
+Explain the online phase of Approximate MMM.........Online: for a new input vector a, find its nearest centroid c and retrieve the precomputed c·b_j values from the lookup tables instead of multiplying directly.
+Why does Approximate MMM avoid multiplications?........It replaces costly multiply-accumulate (MAC) operations with lookup-accumulate (LAC) operations using precomputed tables.
+How is the nearest centroid found efficiently?........By computing distances to all K centroids or by hashing a via Locality-Sensitive Hashing (LSH) to quickly locate the closest cluster.
+What are Ai and Bi partitions mentioned in the slides?........To parallelize clustering and lookup, A is partitioned column-wise into submatrices A_i, and B is partitioned row-wise into corresponding B_i blocks, each handled separately then summed.
+⸻........
+Low-Rank Adaptation (LoRA)........
+Define the key variables in LoRA.........
+What is the full LoRA update rule?........
+Why is LoRA parameter-efficient?........
+What happens when r=d?........The low-rank update spans the full space, so LoRA becomes equivalent to full fine-tuning.
+Does LoRA increase inference latency?........No — at inference time W and B A are merged, so forward speed equals the original model.
+What does r control in LoRA?........The adaptation rank — larger r gives more expressive updates but higher cost; small r (e.g., 8-16) retains near-full accuracy on large models like GPT-3.
+What is the geometric interpretation of LoRA?........A and B learn a low-dimensional subspace capturing dominant update directions of W, analogous to a truncated SVD.
+What is \Delta W's density compared to W?........Even if W is sparse, B A is typically dense (sum of low-rank matrices → dense); thus LoRA can destroy original sparsity unless designed carefully (e.g., Rosko row-skipping).
+How does Rosko modify LoRA to preserve sparsity?........By ensuring B follows the same row-skipping sparsity pattern as W; then W + B A maintains structured sparsity
+LECTURE 9 - TRANSFORMERS & AUTOREGRESSIVE LLMS........
+What is the central idea of an autoregressive LLM?........Predict the next token x_t given all previous tokens x_{<t}. Model learns P(x_t | x_{<t}) sequentially.
+Define self-attention mathematically.........
+Why is masking used in decoder self-attention?........To ensure each token only attends to previous tokens (causality) and not future ones.
+What are Q, K, and V matrices?........Query, Key, and Value projections learned via three separate weight matrices W_Q, W_K, W_V.
+What is Multi-Head Attention?........Multiple attention heads compute attention in parallel over different subspaces; outputs are concatenated.
+Why use residual connections and layer norm?........Prevent vanishing gradients and stabilize deep transformer training.
+Explain the encoder-decoder attention in translation.........Decoder attends to encoder outputs to condition generation on input sequence context.
+What are positional encodings and why are they used?........Add sinusoidal or learned position vectors to preserve word order information in sequence models.
+⸻........
+⚙️ LECTURE 10 - FLASHATTENTION & SPECULATIVE DECODING........
+What problem does FlashAttention solve?........Memory bottleneck of quadratic attention by reordering operations to compute in tiled blocks in GPU SRAM.
+How does FlashAttention improve efficiency?........Fuses softmax + matrix ops, avoids writing intermediate large attention matrices to GPU memory.
+Complexity improvement of FlashAttention.........Still O(n^2) arithmetic but O(n) memory usage.
+What is speculative decoding?........A faster decoding method where a small "draft" model generates multiple next tokens, then the large model verifies them in parallel.
+How does verification work in speculative decoding?........The large model checks the candidate sequence; if match → accept block; else → fallback to autoregressive step.
+Speedup achieved by speculative decoding.........Typically 1.5-2.5× faster depending on model and draft/target ratio.
+Key tradeoff in speculative decoding.........More candidates → higher parallelism but greater verification cost; fewer → less speedup.
+⸻........
+LECTURE 11 - ADVANCED TRANSFORMER OPTIMIZATION........
+What is key-value caching?........During inference, cache K and V matrices from prior tokens to avoid recomputation → speeds up autoregressive decoding.
+Why is kv-caching important for long sequences?........Reduces per-token compute from O(n^2) to O(n) across timesteps.
+What are rotary positional embeddings (RoPE)?........Continuous complex rotations applied to Q and K vectors to represent relative position efficiently.
+Why are LLMs trained with causal masks?........Ensure autoregressive structure, maintaining left-to-right token dependency.
+⸻........
+LECTURE 12 - SELF-SUPERVISED & CONTRASTIVE LEARNING (SimCLR, DINO)........
+What is self-supervised learning (SSL)?........Learning representations without labels by defining a pretext task (e.g., predicting masked parts, contrastive similarity).
+What is contrastive learning?........Bring representations of similar samples closer (positive pairs) and push dissimilar ones apart (negative pairs).
+SimCLR objective formula.........
+What are positive and negative pairs in SimCLR?........Positives = two augmented views of same image; negatives = other images in batch.
+What is temperature τ in SimCLR loss?........Controls sharpness of similarity distribution; lower τ = stronger discrimination.
+What is DINO?........"Self-Distillation with No Labels" — teacher and student networks trained via exponential moving average of weights.
+What role does EMA play in DINO?........Smoothly updates teacher weights for stable self-distillation; avoids collapse.
+Why does DINO not need negatives?........Self-distillation uses cross-entropy between soft teacher/student logits rather than contrastive pairs.
+How does DINO achieve invariance?........Different augmented views (global vs local crops) are encouraged to produce same teacher predictions.
+⸻........
+LECTURE 13 - MULTIMODAL MODELS (CLIP, STABLE DIFFUSION)........
+What does multimodal mean?........Models that process and align multiple data modalities, e.g., text + image.
+........
+CLIP loss function.........
+What are CLIP's encoders?........Visual encoder (ResNet or ViT) and text encoder (Transformer) trained on 400M image-text pairs.
+How does CLIP perform zero-shot classification?........Computes cosine similarity between image embedding and text embeddings of class names → pick highest.
+What is Stable Diffusion's core architecture?........Latent Diffusion Model — operates in compressed latent space using U-Net denoiser + VAE encoder/decoder.
+What is diffusion training objective?........Train denoiser to predict added Gaussian noise at each timestep (score matching objective).
+Role of U-Net in Stable Diffusion.........Performs iterative denoising; conditioned on text embedding from CLIP's text encoder.
+How is text conditioning added in Stable Diffusion?........Via cross-attention layers: image latents attend to CLIP text embeddings.
+Why train in latent space instead of pixel space?........Reduces computational cost by 10-100× while preserving perceptual quality.
+⸻........
+✅ QUIZ 4 - DISTILLATION, DEPTHWISE CONV, TRANSFORMER BASICS........
+Q1a........True — Post-training pruning can use original training data to recover accuracy.
+Q1b........True — A pre-trained model can distill to a student even without access to training data (use outputs).
+Q1c........True — Black-box API access to outputs still enables distillation.
+..........
+Q2b........True — Savings decrease as input channels increase.
+Q2c Q2 c: The saving increases as k increases.
+
+Consider a CONV layer using N kxkxM filters. In lec-8, we learned that depthwise separable convolution can save model parameters over the standard CONV where depthwise separable convolution is not used.Recall that depthwise separable convolution is composed of two steps:
+
+(1) depthwise kxk convolutions and
+
+(2) pointwise 1x1 convolution.We are interested in the savings of depthwise separable convolution in the number of parameters, in comparison with the standard CONV layer.Please indicate true or false for each of the following statements.........True — Savings increase as spatial filter size increases.
+Q3a........True — Decoder attends to all encoder inputs and prior decoded outputs.
+Q3b........True — K and V are fixed for given encoder inputs during a layer's attention computation.
+⸻........
+✅ QUIZ 5 - TRANSFORMER DIMENSIONS, ViT, CLS TOKEN........
+Q1a
+Q 1a: Consider the linear projection matrices Qw and Qk . Their dimensions are independent of the sequence length .
+
+Q1:
+We have learned about the Transformer for machine translation. The input sequence is composed of tokens from the prompt and decoded tokens. Suppose there are a total of n tokens in the input sequence for both the encoder and the decoder.
+Please indicate true or false for each of the following statements.........True — W_Q and W_K dimensions independent of sequence length n.
+Q1b
+
+Q 1b: The matrix Qkt is always an nxn square matrix.
+
+Q1:
+We have learned about the Transformer for machine translation. The input sequence is composed of tokens from the prompt and decoded tokens. Suppose there are a total of n tokens in the input sequence for both the encoder and the decoder.
+Please indicate true or false for each of the following statements.........False — Attention matrix is n \times n, not fixed independent of seq length.
+Q 1c: Each neuron in a Feed Forward Layer takes n inputs. (seq lenghth of encoder/decoder = n)........False — Each feedforward neuron takes d_{model} inputs.
+Q1d
+
+Q1:
+We have learned about the Transformer for machine translation. The input sequence is composed of tokens from the prompt and decoded tokens. Suppose there are a total of n tokens in the input sequence for both the encoder and the decoder.
+Please indicate true or false for each of the following statements.........True — Linear layer before softmax depends on vocabulary size.
+Q2a........True — CLS token embedding has same dimension as other tokens.
+Q2b........False — CLS token embedding is learned, not image-content-based initially.
+Q2c........True — CLS token attends globally to all patch tokens, summarizing the image.
+LECTURE 9 - TRANSFORMERS & AUTOREGRESSIVE LLMS........
+What is the central idea of an autoregressive LLM?........Predict the next token x_t given all previous tokens x_{<t}. Model learns P(x_t | x_{<t}) sequentially.
+Define self-attention mathematically.........Compute Attention(Q,K,V) = softmax(QK^T / \sqrt{d_k})V, where Q,K,V are learned projections of embeddings.
+Why is masking used in decoder self-attention?........To ensure each token only attends to previous tokens (causality) and not future ones.
+What are Q, K, and V matrices?........Query, Key, and Value projections learned via three separate weight matrices W_Q, W_K, W_V.
+What is Multi-Head Attention?........Multiple attention heads compute attention in parallel over different subspaces; outputs are concatenated.
+Why use residual connections and layer norm?........Prevent vanishing gradients and stabilize deep transformer training.
+Explain the encoder-decoder attention in translation.........Decoder attends to encoder outputs to condition generation on input sequence context.
+What are positional encodings and why are they used?........Add sinusoidal or learned position vectors to preserve word order information in sequence models.
+⸻........
+⚙️ LECTURE 10 - FLASHATTENTION & SPECULATIVE DECODING........
+What problem does FlashAttention solve?........Memory bottleneck of quadratic attention by reordering operations to compute in tiled blocks in GPU SRAM.
+How does FlashAttention improve efficiency?........Fuses softmax + matrix ops, avoids writing intermediate large attention matrices to GPU memory.
+Complexity improvement of FlashAttention.........Still O(n^2) arithmetic but O(n) memory usage.
+What is speculative decoding?........A faster decoding method where a small "draft" model generates multiple next tokens, then the large model verifies them in parallel.
+How does verification work in speculative decoding?........The large model checks the candidate sequence; if match → accept block; else → fallback to autoregressive step.
+Speedup achieved by speculative decoding.........Typically 1.5-2.5× faster depending on model and draft/target ratio.
+Key tradeoff in speculative decoding.........More candidates → higher parallelism but greater verification cost; fewer → less speedup.
+⸻........
+LECTURE 11 - ADVANCED TRANSFORMER OPTIMIZATION........
+What is key-value caching?........During inference, cache K and V matrices from prior tokens to avoid recomputation → speeds up autoregressive decoding.
+Why is kv-caching important for long sequences?........Reduces per-token compute from O(n^2) to O(n) across timesteps.
+What are rotary positional embeddings (RoPE)?........Continuous complex rotations applied to Q and K vectors to represent relative position efficiently.
+Why are LLMs trained with causal masks?........Ensure autoregressive structure, maintaining left-to-right token dependency.
+⸻........
+LECTURE 12 - SELF-SUPERVISED & CONTRASTIVE LEARNING (SimCLR, DINO)........
+What is self-supervised learning (SSL)?........Learning representations without labels by defining a pretext task (e.g., predicting masked parts, contrastive similarity).
+What is contrastive learning?........Bring representations of similar samples closer (positive pairs) and push dissimilar ones apart (negative pairs).
+........
+What are positive and negative pairs in SimCLR?........Positives = two augmented views of same image; negatives = other images in batch.
+What is temperature τ in SimCLR loss?........Controls sharpness of similarity distribution; lower τ = stronger discrimination.
+What is DINO?........"Self-Distillation with No Labels" — teacher and student networks trained via exponential moving average of weights.
+What role does EMA play in DINO?........Smoothly updates teacher weights for stable self-distillation; avoids collapse.
+Why does DINO not need negatives?........Self-distillation uses cross-entropy between soft teacher/student logits rather than contrastive pairs.
+How does DINO achieve invariance?........Different augmented views (global vs local crops) are encouraged to produce same teacher predictions.
+⸻........
+LECTURE 13 - MULTIMODAL MODELS (CLIP, STABLE DIFFUSION)........
+What does multimodal mean?........Models that process and align multiple data modalities, e.g., text + image.
+What is CLIP's key idea?........Train text and image encoders jointly so that their embeddings align in a shared space using contrastive loss.
+CLIP loss function.........Contrastive InfoNCE: L = -\frac{1}{N}\sum_i \log \frac{\exp(sim(t_i, v_i)/\tau)}{\sum_j \exp(sim(t_i, v_j)/\tau)}.
+What are CLIP's encoders?........Visual encoder (ResNet or ViT) and text encoder (Transformer) trained on 400M image-text pairs.
+How does CLIP perform zero-shot classification?........Computes cosine similarity between image embedding and text embeddings of class names → pick highest.
+What is Stable Diffusion's core architecture?........Latent Diffusion Model — operates in compressed latent space using U-Net denoiser + VAE encoder/decoder.
+What is diffusion training objective?........Train denoiser to predict added Gaussian noise at each timestep (score matching objective).
+Role of U-Net in Stable Diffusion.........Performs iterative denoising; conditioned on text embedding from CLIP's text encoder.
+How is text conditioning added in Stable Diffusion?........Via cross-attention layers: image latents attend to CLIP text embeddings.
+Why train in latent space instead of pixel space?........Reduces computational cost by 10-100× while preserving perceptual quality.
+⸻........
+✅ QUIZ 4 - DISTILLATION, DEPTHWISE CONV, TRANSFORMER BASICS........
+Q1a We can conduct post-training pruning on and use the original training data of the company to make an effort in recovering the accuracy of the pruned network.........True — Post-training pruning can use original training data to recover accuracy.
+Q1 b: We can use D as a teacher to distill a smaller student network, even if we don't have access to the original training data of the company.........True — A pre-trained model can distill to a student even without access to training data (use outputs).
+Q1c........True — Black-box API access to outputs still enables distillation.
+Q2a: Q2 a: The modified convolution layer incurs 2x more arithmetic operations
+
+
+Consider a 3x3 convolution layer using stride = 3. As slide 16 of lec-2 shows (see the diagram below), each 3D filter (3x3xd) of the layer slides spatially over an hxwxd 3D input, where h and w are large integers.
+
+Suppose that we modify the convolution layer to use a stride = 2 instead of a stride = 3,
+Please indicate true or false for each of the following statements.........True — Depthwise conv filters differ per input channel.
+Consider a CONV layer using N kxkxM filters. In lec-8, we learned that depthwise separable convolution can save model parameters over the standard CONV where depthwise separable convolution is not used.Recall that depthwise separable convolution is composed of two steps:
+
+(1) depthwise kxk convolutions and
+
+(2) pointwise 1x1 convolution.We are interested in the savings of depthwise separable convolution in the number of parameters, in comparison with the standard CONV layer.Please indicate true or false for each of the following statements.
+
+Q2b The saving decreases as N increases.........True — Savings decrease as input channels increase.
+Q2c........True — Savings increase as spatial filter size increases.
+Q3a Q3 a: In decoding the next Italian word during the translation, the decoder attends to all the words in the input English sentence as well as all translated words thus far in the output Italian sentence........True — Decoder attends to all encoder inputs and prior decoded outputs.
+Q3b........True — K and V are fixed for given encoder inputs during a layer's attention computation.
+⸻........
+✅ QUIZ 5 - TRANSFORMER DIMENSIONS, ViT, CLS TOKEN........
+Q1aQ 1a: Consider the linear projection matrices Wq and Wk. Their dimensions are independent of the sequence length n.........True — W_Q and W_K dimensions independent of sequence length n.
+Q1b........False — Attention matrix is n \times n, not fixed independent of seq length.
+Q1c........True — Each feedforward neuron takes d_{model} inputs.
+Q1d........True — Linear layer before softmax depends on vocabulary size.
+Q2a Q 2a: The embedding vector of the CLS token has the same length as any other token.........True — CLS token embedding has same dimension as other tokens.
+Q2b........False — CLS token embedding is learned, not image-content-based initially.
+Q2c........True — CLS token attends globally to all patch tokens, summarizing the image.
+LECTURE 9 - TRANSFORMERS & AUTOREGRESSIVE LLMS........
+What is the central idea of an autoregressive LLM?........Predict the next token x_t given all previous tokens x_{<t}. Model learns P(x_t | x_{<t}) sequentially.
+Define self-attention mathematically.........Compute Attention(Q,K,V) = softmax(QK^T / \sqrt{d_k})V, where Q,K,V are learned projections of embeddings.
+Why is masking used in decoder self-attention?........To ensure each token only attends to previous tokens (causality) and not future ones.
+What are Q, K, and V matrices?........Query, Key, and Value projections learned via three separate weight matrices W_Q, W_K, W_V.
+What is Multi-Head Attention?........Multiple attention heads compute attention in parallel over different subspaces; outputs are concatenated.
+Why use residual connections and layer norm?........Prevent vanishing gradients and stabilize deep transformer training.
+Explain the encoder-decoder attention in translation.........Decoder attends to encoder outputs to condition generation on input sequence context.
+What are positional encodings and why are they used?........Add sinusoidal or learned position vectors to preserve word order information in sequence models.
+⸻........
+⚙️ LECTURE 10 - FLASHATTENTION & SPECULATIVE DECODING........
+What problem does FlashAttention solve?........Memory bottleneck of quadratic attention by reordering operations to compute in tiled blocks in GPU SRAM.
+How does FlashAttention improve efficiency?........Fuses softmax + matrix ops, avoids writing intermediate large attention matrices to GPU memory.
+Complexity improvement of FlashAttention.........Still O(n^2) arithmetic but O(n) memory usage.
+What is speculative decoding?........A faster decoding method where a small "draft" model generates multiple next tokens, then the large model verifies them in parallel.
+How does verification work in speculative decoding?........The large model checks the candidate sequence; if match → accept block; else → fallback to autoregressive step.
+Speedup achieved by speculative decoding.........Typically 1.5-2.5× faster depending on model and draft/target ratio.
+Key tradeoff in speculative decoding.........More candidates → higher parallelism but greater verification cost; fewer → less speedup.
+⸻........
+LECTURE 11 - ADVANCED TRANSFORMER OPTIMIZATION........
+What is key-value caching?........During inference, cache K and V matrices from prior tokens to avoid recomputation → speeds up autoregressive decoding.
+Why is kv-caching important for long sequences?........Reduces per-token compute from O(n^2) to O(n) across timesteps.
+What are rotary positional embeddings (RoPE)?........Continuous complex rotations applied to Q and K vectors to represent relative position efficiently.
+Why are LLMs trained with causal masks?........Ensure autoregressive structure, maintaining left-to-right token dependency.
+⸻........
+LECTURE 12 - SELF-SUPERVISED & CONTRASTIVE LEARNING (SimCLR, DINO)........
+What is self-supervised learning (SSL)?........Learning representations without labels by defining a pretext task (e.g., predicting masked parts, contrastive similarity).
+What is contrastive learning?........Bring representations of similar samples closer (positive pairs) and push dissimilar ones apart (negative pairs).
+SimCLR objective formula.........L = -\log \frac{\exp(sim(z_i, z_j)/\tau)}{\sum_k \exp(sim(z_i, z_k)/\tau)}, where sim(\cdot) = cosine similarity.
+What are positive and negative pairs in SimCLR?........Positives = two augmented views of same image; negatives = other images in batch.
+What is temperature τ in SimCLR loss?........Controls sharpness of similarity distribution; lower τ = stronger discrimination.
+What is DINO?........"Self-Distillation with No Labels" — teacher and student networks trained via exponential moving average of weights.
+What role does EMA play in DINO?........Smoothly updates teacher weights for stable self-distillation; avoids collapse.
+Why does DINO not need negatives?........Self-distillation uses cross-entropy between soft teacher/student logits rather than contrastive pairs.
+How does DINO achieve invariance?........Different augmented views (global vs local crops) are encouraged to produce same teacher predictions.
+⸻........
+LECTURE 13 - MULTIMODAL MODELS (CLIP, STABLE DIFFUSION)........
+What does multimodal mean?........Models that process and align multiple data modalities, e.g., text + image.
+What is CLIP's key idea?........Train text and image encoders jointly so that their embeddings align in a shared space using contrastive loss.
+CLIP loss function.........Contrastive InfoNCE: L = -\frac{1}{N}\sum_i \log \frac{\exp(sim(t_i, v_i)/\tau)}{\sum_j \exp(sim(t_i, v_j)/\tau)}.
+What are CLIP's encoders?........Visual encoder (ResNet or ViT) and text encoder (Transformer) trained on 400M image-text pairs.
+How does CLIP perform zero-shot classification?........Computes cosine similarity between image embedding and text embeddings of class names → pick highest.
+What is Stable Diffusion's core architecture?........Latent Diffusion Model — operates in compressed latent space using U-Net denoiser + VAE encoder/decoder.
+What is diffusion training objective?........Train denoiser to predict added Gaussian noise at each timestep (score matching objective).
+Role of U-Net in Stable Diffusion.........Performs iterative denoising; conditioned on text embedding from CLIP's text encoder.
+How is text conditioning added in Stable Diffusion?........Via cross-attention layers: image latents attend to CLIP text embeddings.
+Why train in latent space instead of pixel space?........Reduces computational cost by 10-100× while preserving perceptual quality.
+⸻........
+✅ QUIZ 4 - DISTILLATION, DEPTHWISE CONV, TRANSFORMER BASICS........
+Q1a........True — Post-training pruning can use original training data to recover accuracy.
+Q1b We can use D as a teacher to distill a smaller student network, even if we don't have access to the original training data of the company.........True — A pre-trained model can distill to a student even without access to training data (use outputs).
+Q1c........True — Black-box API access to outputs still enables distillation.
+..........
+Q2b........True — Savings decrease as input channels increase.
+Q2c........True — Savings increase as spatial filter size increases.
+Q3a........True — Decoder attends to all encoder inputs and prior decoded outputs.
+Q3b........True — K and V are fixed for given encoder inputs during a layer's attention computation.
+⸻........
+✅ QUIZ 5 - TRANSFORMER DIMENSIONS, ViT, CLS TOKEN........
+Q1a........True — W_Q and W_K dimensions independent of sequence length n.
+Q1b . T/F: The matrix KQT is always an nxn square matrix (n = seq length)........True — Attention matrix is n \times n
+Q1c........True — Each feedforward neuron takes d_{model} inputs.
+Q1d........True — Linear layer before softmax depends on vocabulary size.
+Q2a........True — CLS token embedding has same dimension as other tokens.
+Q2b........False — CLS token embedding is learned, not image-content-based initially.
+Q2c........True — CLS token attends globally to all patch tokens, summarizing the image.
+Masked Diffusion vs Autoregression (MDLM vs ARM)........ARMs decode one token at a time left→right; MDLMs denoise masked tokens in parallel for several steps and can be ~10× faster at inference for similar quality (training is heavier).
+Why autoregression isn't fundamental for LLMs........If a model learns the data distribution we can sample non-autoregressively (e.g., diffusion) and still get fluent generation.
+MDLM denoising step intuition........Each step is like BERT-style masked-token prediction: predict masked tokens from context then update the sequence.
+Semi-autoregressive block diffusion........Generate short blocks autoregressively and refine them by diffusion within each block for speed/quality trade-offs.
+MDLM training vs inference cost........Training uses timestep conditioning and more passes (cost↑); inference replaces long autoregressive chains with fewer parallel denoise steps (speed↑).
+MobileLLM — why tiny models matter........On-device RAM/energy limits require small KV caches and parameter counts for latency and battery life.
+MobileLLM architectural wins (GQA/SwiGLU/tied embeddings/layer sharing)........GQA reduces KV cache; SwiGLU improves small-model accuracy; tying input/output embeddings saves V·d params; immediate block-wise sharing improves cache locality/latency.
+Embedding tying — memory math........Untied uses 2·V·d params; tied uses V·d → save V·d parameters linearly with vocabulary size.
+On-device quantization note........Modern mobile stacks run ~3-4 bits/weight and recover quality with light adapters/fine-tuning.
+Quiz 6 Q1a — "Mask t>1 tokens each step exactly emulates ARM training."........False — ARM's step trains a single next token; masking multiple tokens breaks the left-to-right equivalence.
+Quiz 6 Q1b — "Mask exactly one predetermined position per step reproduces ARM."........True — one fixed next-token position per iteration matches ARM dynamics.
+Quiz 6 Q1c — "Random masked position per step still equals ARM training."........False — randomness loses strict causal ordering.
+Quiz 6 Q2a — DINO: student/teacher setup with EMA teacher and multi-crop views.........True — student matches EMA teacher predictions on differently augmented views.
+Quiz 6 Q2b — Local crop attention in DINO.........True — tokens in a local crop self-attend within that crop.
+Quiz 6 Q3a — CLIP linear probe on frozen image encoder helps.........True — a learned linear head improves zero-shot prompt performance in many setups.
+LLM reasoning — objective........Shift probability mass so step-by-step, verifiably correct solutions rank highest.
+Test-time scaling (think more beats bigger)........For the same model, allowing longer chains-of-thought often improves accuracy more than merely scaling parameters.
+Budget forcing (EOT control)........Suppress EOT to encourage longer thinking; enforce EOT to truncate. Too much suppression can cause loops.
+Why SFT alone can fail on reasoning........It can overfit surface forms; reinforcement fine-tuning (RFT) aligns the model with solution quality.
+PRO → GRPO intuition........Use group-relative advantages across sampled solutions; normalize by the largest advantage for stable long-trace updates.
+Mixture-of-Experts (MoE) — core idea........Replace a single FFN with many experts and route each token to top-k experts → huge parameter count at near-dense compute per token.
+Router and capacity factor........Each expert has capacity; raising capacity factor reduces overflow (drops) but increases compute/communication.
+Noisy top-k routing........Add noise to router logits during training to avoid early expert collapse and improve load balance.
+Why MoE scales well........Only a subset of experts is active per token → parameter count scales without linear FLOP growth.
+Expert Parallelism (EP)........Place experts on different GPUs; duplicate heavy experts and pack them to balance loads.
+Placement — zigzag vs greedy........Greedy bin-packing is slow; "zigzag snake" scanning gives fast, balanced placement in practice.
+Evolutionary coding agents — loop........Generate code → evaluate on workloads → select/mutate → iterate toward better correctness/performance/resource metrics.
+Why evolution suits systems tasks........We have reliable programmatic verifiers (benchmarks) to close the loop automatically.
+Quiz 7 Q1a — Stable Diffusion cross-attention roles (queries/keys/values).........True — queries come from image latents; keys/values come from text embeddings.
+Quiz 7 Q1b — "Stable Diffusion operates in pixel space."........False — it denoises in latent space via a VAE.
+Quiz 7 Q1c — "The U-Net predicts the clean image directly."........False — it typically predicts noise (or v).
+Quiz 7 Q2a — "MDLM must denoise exactly one token per step."........False — it can denoise many tokens per step.
+Quiz 7 Q2b — "Each diffusion step processes the whole sequence."........True — masked and unmasked tokens flow through the model each step.
+Quiz 7 Q2c — "MDLM is trained across many timesteps (noise levels)."........True — timestep conditioning is essential.
+Quiz 7 Q3a — "Tying embeddings saves V·d parameters (scales with vocab size)."........True — savings grow linearly with vocabulary.
+Quiz 7 Q3b — "Tying embeddings depends on number of transformer layers L."........False — it concerns the embedding matrices, not L.
+........

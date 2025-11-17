@@ -1,0 +1,439 @@
+\documentclass[a4 paper]{article}
+% Set target color model to RGB
+\usepackage[inner=2.0cm,outer=2.0cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage[rgb]{xcolor}
+\usepackage{verbatim}
+
+\usepackage{float} % enables [H] exact placement
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage[font=small,labelfont=bf]{caption}
+
+\usepackage{amsgen,amsmath,amstext,amsbsy,amsopn,tikz,amssymb}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true, urlcolor=blue,  linkcolor=blue, citecolor=blue]{hyperref}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{rotating}
+\usepackage{minted}
+\usemintedstyle{vs}
+%\usetikzlibrary{through,backgrounds}
+%\usetikzlibrary{shadows}
+% \usepackage[francais]{babel}
+\usepackage{booktabs}
+
+\newcommand{\pya}[1]{\mintinline{python}{#1}}
+
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{rem}[thm]{Remark}
+\numberwithin{equation}{section}
+
+\newcommand{\homework}[7]{
+   \pagestyle{myheadings}
+   \thispagestyle{plain}
+   \newpage
+   \setcounter{page}{1}
+   \noindent
+   \begin{center}
+   \framebox{
+      \vbox{\vspace{2mm}
+    \hbox to 6.28in { {\bf Harvard CS 2420:~Computing at Scale (Fall 2025) \hfill {\small (#2)}} }
+       \vspace{6mm}
+       \hbox to 6.28in { {\Large \hfill #1  \hfill} }
+       \vspace{6mm}
+       \hbox to 6.28in { {\it Instructor: {\rm #3} \hfill \textbf{Team}: {\rm #5}
+       %, Harvard ID:
+       {\rm #6}} }
+       \hbox to 6.28in { {\hfill \it 
+       %Your teammates: 
+       {\rm #7}  }}
+      \vspace{2mm}}
+   }
+   \end{center}
+   \markboth{#5 -- #1}{#5 -- #1}
+   \vspace*{4mm}
+}
+
+\newcommand{\problem}[2]{~\\\fbox{\textbf{Part #1}}\hfill (#2 points)\newline\newline}
+\newcommand{\subproblem}[1]{~\newline\textbf{(#1)}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Hy}{\mathcal{H}}
+\newcommand{\VS}{\textrm{VS}}
+\newcommand{\solution}{~\newline\textbf{\textit{(Solution)}} }
+
+\newcommand{\bbF}{\mathbb{F}}
+\newcommand{\bbX}{\mathbb{X}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bY}{\mathbf{Y}}
+\newcommand{\bepsilon}{\boldsymbol{\epsilon}}
+\newcommand{\balpha}{\boldsymbol{\alpha}}
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\0}{\mathbf{0}}
+
+\begin{document}
+\homework{Problem Set 4 (PSet 4): Federated Learning and Text-to-Image Generation}
+{Due: 11/5/2025 at 11:59PM EST}{H.T. Kung}{}{Name-1, Name-2, Name-3, Name-4}{}{}
+
+
+\begin{center}
+\textbf{Please include the full names of all team members in your submission (See Section \ref{sec:submission}). \\
+Please use Google Colab as your coding environment for Problem Set 4.
+}
+\end{center}
+
+\section{Exploring Federated Learning (FL)}
+\label{sec:sec1}
+
+
+\problem{1.1}{5}
+\begin{enumerate}
+    \item In \textit{Code Cell 1.3}, implement the function \pya{iid_sampler} to generate \textbf{IID} (independent and identically distributed) samples from the CIFAR-10 training set. We will use this function to generate training subsets for multiple devices in \textbf{PART 1.2}.
+    \item In \textit{Code Cell 1.4}, create a single device using the function \pya{create_device}. This device should have 10\% of the CIFAR-10 training set, obtained using \pya{iid_sampler}.
+    \item Train the model for 1000 epochs using the specified parameters in \textit{Code Cell 1.4} (similar to Assignment 1). The number of epochs is 10$\times$ greater due to the single device having only 10\% of the data. Plot the test accuracy (\pya{device['test_acc_tracker']}) over and comment on the classification accuracy compared to using 100\% of the dataset as in Assignment 2.
+    %training loss (\pya{device['train_loss_tracker']}) and 
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+2. [See Colab.]
+
+3.
+
+
+\problem{1.2}{10}
+\begin{enumerate}
+    \item In \textit{Code Cell 1.5}, implement \pya{average_weights}. We have provided test code you can use to validate your implementation. This test code will also be useful for the full implementation of Federated Learning in \textbf{PART 1.3}.
+    \item In \textit{Code Cell 1.5}, implement the \pya{get_devices_for_round} function. Try multiple \pya{device_pct} settings to ensure that it is working properly.
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+2. [See Colab.]
+
+
+\problem{1.3}{10}
+\begin{enumerate}
+    \item In \textit{Code Cell 1.6}, train a global model via federated learning. Much of the code has been given to you, but you will need to fill in the parts using calls to the functions you wrote above.
+    \item Graph the accuracy of the global model over 100 rounds. Discuss the accuracy difference between the global model trained here and the individual local model you trained in \textbf{PART 1.1}.
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+2. 
+
+\newpage
+\section{Non-IID Federated Learning and Fairness}
+\label{sec:sec2}
+
+\problem{2.1}{10}
+\begin{enumerate}
+    \item In \textit{Code Cell 2.1}, implement the \pya{noniid_group_sampler} function to generate \textbf{non-IID} samples from the CIFAR-10 training set. As input, the function should take the dataset and number of training samples each device should be assigned. As in \pya{iid_sampler} you implemented previously, the function should return a \pya{dict} where each key is a device ID number and each value is a \pya{set} of the indices of training samples in the dataset assigned to that device. You may want to have the function return other data as well, depending on how you implement functions in later parts of the assignment. We have provided the mapping that indicates which classes are mapped to each group. Within a given group, you should sample the data in an IID fashion.
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.] 
+
+\problem{2.2}{5}
+\begin{enumerate}
+\item In \textit{Code Cell 2.2}, implement the \pya{get_devices_for_round_GROUP} function to generate a list of devices that will participate in each round of federated learning.
+The function should, at minimum, take as input 1) the list of all devices, and 2) how many devices from each group should participate in a given round.
+It should return a list of devices that will participate in a given round.
+You may want to add additional parameters to the function depending on your implementation strategy.  
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+
+\problem{2.3}{5}
+\begin{enumerate}
+\item In \textit{Code Cell 2.3}, implement the \pya{cifar_noniid_group_test} function to create a test dataset for each group.  It should take the full CIFAR-10 test dataset as input, and return a dictionary where each key is a group ID, and each value is a \pya{set} of the indexes for all test samples for that group. 
+
+\item In \textit{Code Cell 2.3}, implement the \pya{test_group} function to output the per-group classification accuracy of the global model.
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+2. [See Colab.]
+
+\problem{2.4}{10}
+\begin{enumerate}
+\item In \textit{Code Cell 2.4}, train a global model via federated learning for the group-based non-IID setting.  Much of the code has been given to you, but you will need to fill in the parts using calls to the group-based, non-IID functions you wrote above.  You will likely be able to re-use parts of the code you wrote in \textbf{Part 1.3}.
+
+\item Graph the per-group test accuracy over 100 rounds in the \textbf{Fair Device Participation} scenario.  Each group should have its own line in the graph.
+
+\item Graph the per-group test accuracy over 100 rounds in the \textbf{Unfair Device Participation} scenario.  Each group should have its own line in the graph.
+
+\item Describe the differences you see between the two scenarios.  How can you explain what you are seeing?
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+2. 
+
+3.
+
+4. 
+
+\newpage
+\section{Quantization of Local Models for Reduced Communication Cost}
+\label{sec:sec3}
+
+\problem{3.1}{5}
+\begin{enumerate}
+\item In \textit{Code Cell 3.1}, implement a function that converts full-precision numbers in the range $[0, 1]$ into $n$-bit fixed-point numbers. If your implementation is correct, it should return \textit{'Output of Quantization Matches!'}.
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+\problem{3.2}{10}
+\begin{enumerate}
+\item In \textit{Code Cell 3.2}, implement \pya{dorefa_g(w, nbit, adaptive_scale=None)} using the \textbf{stochastic quantization function} shown above. Again, if your implementation is correct, it should return \textit{'Output of Quantization Matches!'}.
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+\problem{3.3}{10}
+\begin{enumerate}
+\item In \textit{Code Cell 3.3}, run federated learning with the following two quantization settings (bit widths): \pya{nbit=16} and \pya{nbit=4}. Graph the accuracy of the global models over 100 rounds for the different bit widths: 32-bit (the full-precision baseline you ran previously), 16-bit, and 4-bit.
+\item Discuss the accuracy difference between the global models across the three different bit width settings: 32-bit, 16-bit, and 4-bit. (100 words maximum)
+\end{enumerate}
+
+\solution{}
+
+1. [See Colab.]
+
+2.
+
+\newpage
+\section{Gradient Inversion Attacks to Federated Learning}
+\label{sec:sec4}
+
+\problem{4.1}{15}
+\begin{enumerate}
+\item Implement three defense strategies (i.e., noise injection, pruning, and quantization) defense$\_$method in \textit{Code Cell 4.1}.
+\item Run the 4 experiments (i.e., Baseline, Noise, Pruning, and Quantization). For each experiment, you should report: (1) the final inversion result measured by $\|\text{image}-\text{recovered\_image}\|_2$ and (2) the optimization process of inversion using \textit{Code Cell 4.2}.
+\item Compare and discuss the effectiveness of the 3 different defense strategies. (100 words maximum)
+\end{enumerate}
+
+\solution{}
+
+
+1. [See Colab.]
+
+2.
+
+3.
+
+\newpage
+\section{Fine-Tune a Large Pre-Trained Stable Diffusion Model to Learn a New Concept}
+\label{sec:sec5}
+
+\problem{5.1}{15}
+\begin{enumerate}
+\item In \textit{Code Cell 5.17}, fine-tune a small subset of U-Net layers in Stable Diffusion v1.5 (Q, K, V projections and the \texttt{to\_out} layer).
+\item Report the number of \emph{tunable parameters} from your implementation (use the value printed by \texttt{print\_params()}).
+\end{enumerate}
+\solution{}
+
+
+1. [See Colab.]
+
+2. 
+
+\problem{5.2}{10}
+\begin{enumerate}
+\item From \textit{Code Cell 5.23} to \textit{Code Cell 5.30}, generate comparison images with the \texttt{sks} token and without it using the provided prompts. Then include those images in Figure~\ref{fig:part_5-2} by replacing each placeholder with the corresponding image you generated.
+\end{enumerate}
+\solution{}
+
+\begin{figure}[H]
+  \centering
+
+  % --- Code Cell 5.23 vs. 5.24 ---
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % --- When ready: comment the line above and UNcomment the line below ---
+    % \includegraphics[width=\linewidth]{ [your-generated-image-with-sks-token] } % UNcomment this line
+    
+    \caption{a photo of \texttt{sks} person next to the lake}
+    
+    \label{fig:code_cell_5-23}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % --- When ready: comment the line above and UNcomment the line below ---
+    % \includegraphics[width=\linewidth]{ [your-generated-image-without-sks-token] } % UNcomment this line
+
+    \caption{a photo of person next to the lake}
+    
+    \label{fig:code-cell-5-24}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  % --- Code Cell 5.25 vs. 5.26 ---
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % \includegraphics[width=\linewidth]{ [your-generated-image-with-sks-token] } % UNcomment this line
+    
+    \caption{a photo of \texttt{sks} person in the office}
+    
+    \label{fig:code-cell-5-25}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % \includegraphics[width=\linewidth]{ [your-generated-image-without-sks-token] } % UNcomment this line
+    
+    \caption{a photo of person in the office}
+    
+    \label{fig:code-cell-5-26}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  % --- Code Cell 5.27 vs. 5.28 ---
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % \includegraphics[width=\linewidth]{ [your-generated-image-with-sks-token] } % UNcomment this line
+    
+    \caption{a photo of \texttt{sks} person at cafe}
+    
+    \label{fig:code-cell-5-27}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % \includegraphics[width=\linewidth]{ [your-generated-image-without-sks-token] } % UNcomment this line
+    
+    \caption{a photo of person at cafe}
+    
+    \label{fig:code-cell-5-28}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  % --- Code Cell 5.29 vs. 5.30 ---
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+    % \includegraphics[width=\linewidth]{ [your-generated-image-with-sks-token] } % UNcomment this line
+    
+    \caption{a photo of \texttt{sks} person on the yard}
+    
+    \label{fig:code-cell-5-29}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    % --- Placeholder ---
+    \fbox{\rule{0pt}{2in} \rule{.9\linewidth}{0pt}} % Comment this line
+     % \includegraphics[width=\linewidth]{ [your-generated-image-without-sks-token] } % UNcomment this line
+     
+    \caption{a photo of person on the yard}
+    
+    \label{fig:code-cell-5-30}
+  \end{subfigure}
+
+
+  \caption{Part 5.2: Comparison with and without the \texttt{sks} token on the fine-tuned Stable Diffusion model.}
+  \label{fig:part_5-2}
+\end{figure}
+
+
+
+\newpage
+\section{Training-Free Multi-Prompt Generation with Varied Resolutions (Inference-Time)}
+\label{sec:sec6}
+
+\problem{6.1}{10}
+\begin{enumerate}
+\item In \textit{Code Cell 6.9}, implement PART 6.1 (a) - (h) to modify the behavior of the cross-attention layers.
+\end{enumerate}
+\solution{}
+
+1. [See Colab.]
+
+\problem{6.2}{5}
+\begin{enumerate}
+\item Include the generated images from \textit{Code Cells 6.11 to 6.13} here.
+\end{enumerate}
+\solution{[Include generated images here]}
+
+
+\problem{6.3}{10}
+\begin{enumerate}
+\item In \textit{Code Cell 6.14}, implement PART 6.3 (a) - (h) to modify the behavior of the cross-attention layers.
+\end{enumerate}
+\solution{}
+
+
+1. [See Colab.]
+
+
+\problem{6.4}{5}
+\begin{enumerate}
+\item Include the generated images from \textit{Code Cells 6.16 to 6.18} here.
+\end{enumerate}
+\solution{[Include generated images here]}
+
+\newpage
+\section{What to Submit}
+\label{sec:submission}
+Your submission should be a \texttt{.zip} archive with a \texttt{CS2420\_FA25\_PSet4} prefix followed by your full name.
+The archive should contain:
+\begin{itemize}
+    \item PDF write-up
+    \item Assignment code
+    \item Text files or PDFs containing the complete outputs (e.g., ChatGPT logs) of all generative AI tools used.
+\end{itemize}
+
+
+
+\noindent
+Example filename: \texttt{CS2420\_FA25\_PSet4\_Name1\_\_Name2\_\_Name3\_\_Name4.zip}\\
+
+\subsection*{Write-up}
+Written responses should be contained within a single PDF document.
+(\LaTeX~is highly recommended!)
+Each response or figure should clearly indicate which problem is being answered.
+%The write-up must contain the full names of all team members.
+
+\subsection*{Code}
+You should include \textbf{all} files that were provided, but with the changes you made.
+
+\end{document} 

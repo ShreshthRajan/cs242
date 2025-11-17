@@ -1,0 +1,132 @@
+==========================================
+PROBLEM SET 4 - PART 3.3 INSTRUCTIONS
+For: Team Members Running Experiments
+==========================================
+
+OVERVIEW:
+You need to run 3 experiments total:
+1. 32-bit baseline (Part 1.3 - already done by teammate)
+2. 16-bit quantization (Cell 3.3)
+3. 4-bit quantization (Cell 3.3)
+
+Total GPU time: ~6 hours
+
+==========================================
+EXPERIMENT 1: GET 32-BIT BASELINE
+==========================================
+
+If Part 1.3 was run with rounds=100:
+- Just get the results from teammate
+- You need: devices[0]['test_acc_tracker']
+
+If NOT run yet with rounds=100:
+1. Go to Code Cell 1.6
+2. Change: rounds = 100 (line 4)
+3. Run Cell 1.6 (~3 hours)
+4. After it finishes, add NEW cell:
+
+   acc_32bit = devices[0]['test_acc_tracker'].copy()
+   print(f"Saved 32-bit baseline: {len(acc_32bit)} rounds, final acc = {acc_32bit[-1]:.2f}%")
+
+==========================================
+EXPERIMENT 2: 16-BIT QUANTIZATION
+==========================================
+
+1. Make sure you've run:
+   - Cells 1.1, 1.2, 1.3, 1.5 (setup + functions)
+   - Cells 3.1, 3.2 (quantizer functions)
+
+2. In Code Cell 3.3:
+   - Verify: nbit = 16 (line 6)
+
+3. Run Cell 3.3
+   - Takes ~3 hours
+   - Will print progress for each round
+
+4. After it finishes, run Code Cell 3.4:
+   - Uncomment: acc_16bit = devices[0]['test_acc_tracker'].copy()
+   - Run the cell
+   - Should say "Missing other results" (this is fine)
+
+==========================================
+EXPERIMENT 3: 4-BIT QUANTIZATION
+==========================================
+
+1. Runtime → Restart runtime (to clear memory)
+
+2. Runtime → Run before (runs all cells up to current)
+   - This re-runs setup cells (~10 mins)
+
+3. In Code Cell 3.3:
+   - Change: nbit = 4 (line 6)
+
+4. Run Cell 3.3
+   - Takes ~3 hours
+   - Will print progress
+
+5. After it finishes, run Code Cell 3.4:
+   - Uncomment: acc_4bit = devices[0]['test_acc_tracker'].copy()
+   - Run the cell
+
+==========================================
+FINAL: GENERATE GRAPH
+==========================================
+
+Once you have ALL THREE results saved:
+
+1. Make sure you have defined:
+   - acc_32bit (from Part 1.3)
+   - acc_16bit (from first 3.3 run)
+   - acc_4bit (from second 3.3 run)
+
+2. Run Code Cell 3.4 with all three uncommented
+
+3. It will:
+   ✅ Generate comparison graph
+   ✅ Print summary statistics
+   ✅ Save results for writeup
+
+==========================================
+TROUBLESHOOTING
+==========================================
+
+Error: "name 'acc_32bit' is not defined"
+→ Run the line: acc_32bit = devices[0]['test_acc_tracker'].copy()
+
+Error: "name 'devices' is not defined"
+→ You need to run Cell 3.3 first
+
+Colab disconnected during training:
+→ Unfortunately, you have to restart that experiment
+→ Keep laptop open and connected to WiFi!
+
+==========================================
+TIME ESTIMATES
+==========================================
+
+Setup (first time): ~15 minutes
+Part 1.3 (if needed): ~3 hours
+Cell 3.3 (nbit=16): ~3 hours
+Cell 3.3 (nbit=4): ~3 hours
+
+Total: ~6-9 hours GPU time
+
+TIP: Run overnight or when you can leave laptop open!
+
+==========================================
+WHAT SHRESHTH COMPLETED
+==========================================
+
+✅ Code Cell 1.3: iid_sampler (implemented)
+✅ Code Cell 1.5: average_weights + get_devices_for_round (implemented)
+✅ Code Cell 3.1: quantizer (implemented & tested)
+✅ Code Cell 3.2: dorefa_g (implemented & tested)
+✅ Code Cell 3.3: FL training code (implemented)
+✅ Code Cell 3.4: Graph generation (created)
+
+NEEDS TO RUN:
+⏳ Cell 3.3 with nbit=16 (~3 hrs)
+⏳ Cell 3.3 with nbit=4 (~3 hrs)
+⏳ Cell 3.4 to generate final graph
+
+==========================================

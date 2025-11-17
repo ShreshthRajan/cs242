@@ -1,0 +1,134 @@
+==========================================
+PROBLEM 4.1 - GRADIENT INVERSION ATTACK
+INSTRUCTIONS FOR TEAM
+==========================================
+
+OVERVIEW:
+Run 4 experiments to test defenses against gradient inversion attacks.
+Each experiment takes ~5-10 minutes.
+Total time: ~30-40 minutes
+
+==========================================
+SETUP (Run Once)
+==========================================
+
+1. Make sure Cells 3.1 and 3.2 have been run
+   (Need quantizer and dorefa_g functions)
+
+2. Run Code Cell 4.1 up to the defense_method function
+   - This loads CIFAR-100, defines LeNet, selects test image
+   - Should show "Ground truth image"
+   - Should print "GT label is X"
+
+==========================================
+EXPERIMENT 1: BASELINE (No Defense)
+==========================================
+
+In Code Cell 4.1, find this line (near the defense_method):
+
+your_defense = 'none'
+
+1. Make sure it says: your_defense = 'none'
+2. Run Code Cell 4.1 (entire cell)
+   - Takes ~5-10 minutes
+   - Prints optimization progress every 10 iterations
+   - Final iteration should show loss value
+
+3. Run Code Cell 4.2 (visualization)
+   - Shows recovery process over 300 iterations
+   - Save this plot screenshot as "baseline_recovery.png"
+
+4. Run Code Cell 4.3 (save results)
+   - Uncomment: l2_baseline = l2_norm
+   - Should print L2 norm value
+   - RECORD THIS NUMBER for writeup
+
+==========================================
+EXPERIMENT 2: NOISE DEFENSE
+==========================================
+
+1. In Code Cell 4.1, change:
+   your_defense = 'noise'
+
+2. Run Code Cell 4.1 (~5-10 minutes)
+
+3. Run Code Cell 4.2
+   - Save screenshot as "noise_defense_recovery.png"
+
+4. Run Code Cell 4.3
+   - Uncomment: l2_noise = l2_norm
+   - Record L2 value
+
+==========================================
+EXPERIMENT 3: PRUNING DEFENSE
+==========================================
+
+1. In Code Cell 4.1, change:
+   your_defense = 'pruning'
+
+2. Run Code Cell 4.1 (~5-10 minutes)
+
+3. Run Code Cell 4.2
+   - Save screenshot as "pruning_defense_recovery.png"
+
+4. Run Code Cell 4.3
+   - Uncomment: l2_pruning = l2_norm
+   - Record L2 value
+
+==========================================
+EXPERIMENT 4: QUANTIZATION DEFENSE
+==========================================
+
+1. In Code Cell 4.1, change:
+   your_defense = 'quantization'
+
+2. Run Code Cell 4.1 (~5-10 minutes)
+
+3. Run Code Cell 4.2
+   - Save screenshot as "quantization_defense_recovery.png"
+
+4. Run Code Cell 4.3
+   - Uncomment: l2_quantization = l2_norm
+   - Record L2 value
+
+==========================================
+FINAL SUMMARY
+==========================================
+
+After all 4 experiments, in Code Cell 4.3:
+- Uncomment the entire summary section at bottom
+- Run the cell
+- Will print comparison table and best defense
+
+EXPECTED RESULTS:
+- Baseline: Lowest L2 (attack succeeds, image recovered)
+- Noise/Pruning/Quantization: Higher L2 (attack fails, image not recovered)
+
+==========================================
+WHAT SHRESHTH COMPLETED
+==========================================
+
+✅ Code Cell 4.1: defense_method function (all 3 defenses implemented)
+✅ Code Cell 4.3: Results tracking and summary (created)
+
+TEAM NEEDS TO:
+⏳ Run 4 experiments (change your_defense each time)
+⏳ Save L2 norms from each
+⏳ Save visualization plots
+⏳ Generate summary comparison
+
+==========================================
+TROUBLESHOOTING
+==========================================
+
+Error: "name 'dorefa_g' is not defined"
+→ Run Code Cells 3.1 and 3.2 first
+
+Error: "name 'quantizer' is not defined"
+→ Run Code Cell 3.1 first
+
+Images don't look recovered even in baseline:
+→ This is normal if model not trained well
+→ The L2 norm is what matters for grading
+
+==========================================
