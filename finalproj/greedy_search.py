@@ -249,7 +249,16 @@ class GreedyQuantizationSearch:
 
             # Update current state
             self.current_config[layer_name] = num_bits
-            self.current_model = best_model
+
+            # Rebuild current model from scratch with updated config
+            # This ensures clean state for next iteration
+            self.current_model = ResNet20().to('cpu')
+            self.current_model.load_state_dict(self.base_model.state_dict())
+            for layer, bits in self.current_config.items():
+                if bits < 32:
+                    self.current_model = quantize_layer(self.current_model, layer, bits)
+            self.current_model = self.current_model.to(self.device)
+
             self.current_accuracy = best_acc
             self.current_ai = best_ai
             current_loss = best_loss
