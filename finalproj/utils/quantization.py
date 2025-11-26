@@ -151,8 +151,8 @@ def quantize_layer(model: nn.Module, layer_name: str, num_bits: int) -> nn.Modul
     Returns:
         Model with specified layer quantized
     """
-    # Create a copy to avoid modifying original
-    model_copy = copy.deepcopy(model)
+    # Modify in-place (caller creates fresh model each time)
+    model_copy = model
 
     # Navigate to the layer
     parts = layer_name.split('.')
