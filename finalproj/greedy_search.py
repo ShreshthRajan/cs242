@@ -151,10 +151,29 @@ class GreedyQuantizationSearch:
         # Evaluate accuracy
         candidate_accuracy = self._evaluate_accuracy(candidate_model)
 
-        # Calculate new AI
-        candidate_ai = self.ai_calculator.compute_ai_with_quantized_layer(
-            layer_name, num_bits
-        )
+        # Calculate new AI for the complete configuration
+        # Need to account for ALL quantized layers, not just the new one
+        candidate_ai = self.baseline_ai  # Start from baseline
+        total_bytes = self.ai_calculator.total_bytes
+        total_flops = self.ai_calculator.total_flops
+
+        # Apply byte reduction for each quantized layer in the config
+        for layer, bits in self.current_config.items():
+            if bits < 32:
+                # Subtract original bytes, add quantized bytes
+                layer_info = self.ai_calculator.layer_info[layer]
+                original_weight_bytes = layer_info['module'].weight.numel() * 4
+                quantized_weight_bytes = layer_info['module'].weight.numel() * (bits / 8)
+                total_bytes = total_bytes - original_weight_bytes + quantized_weight_bytes
+
+        # Apply byte reduction for the new layer being tested
+        layer_info = self.ai_calculator.layer_info[layer_name]
+        original_weight_bytes = layer_info['module'].weight.numel() * 4
+        quantized_weight_bytes = layer_info['module'].weight.numel() * (num_bits / 8)
+        total_bytes = total_bytes - original_weight_bytes + quantized_weight_bytes
+
+        # Compute final AI
+        candidate_ai = total_flops / total_bytes
 
         # Compute loss
         candidate_loss = self._compute_loss(candidate_ai, candidate_accuracy)
@@ -206,6 +225,9 @@ class GreedyQuantizationSearch:
 
             print(f"Trying {len(unquantized_layers)} candidate layers...")
 
+            candidates_tried = 0
+            candidates_rejected = 0
+
             for layer_name in unquantized_layers:
                 for num_bits in self.bitwidth_options:
                     # Try this move
@@ -213,8 +235,13 @@ class GreedyQuantizationSearch:
                         layer_name, num_bits
                     )
 
+                    candidates_tried += 1
+
                     # Check hard constraint
                     if cand_acc < min_accuracy:
+                        candidates_rejected += 1
+                        if candidates_tried <= 3:  # Show first few rejections
+                            print(f"  ❌ {layer_name} {num_bits}-bit: Acc={cand_acc:.2f}% < {min_accuracy}%")
                         continue  # Reject moves that violate accuracy constraint
 
                     # Track best move (minimize loss = maximize J)
@@ -230,6 +257,8 @@ class GreedyQuantizationSearch:
 
             # Check for improvement
             delta_loss = best_loss - current_loss
+
+            print(f"Candidates: {candidates_tried} tried, {candidates_rejected} rejected")
 
             if best_move is None:
                 print("No valid moves found (all violate accuracy constraint).")
@@ -338,7 +367,7 @@ def main():
     # Configuration
     checkpoint_path = 'checkpoints/resnet20_cifar10_best.pth'
     output_path = 'results/greedy_search_results.json'
-    lambda_param = 0.7  # Favor AI more (to encourage quantization)
+    lambda_param = 0.9  # Heavily favor AI (to encourage multi-layer quantization)
     min_accuracy = 89.5  # Allow 2.4% drop (standard for aggressive mixed precision)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
