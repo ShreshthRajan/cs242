@@ -134,8 +134,15 @@ class GreedyQuantizationSearch:
         Returns:
             (model, accuracy, ai, loss)
         """
-        # Create model with this layer quantized
-        candidate_model = copy.deepcopy(self.current_model).cpu()
+        # Recreate model from base and apply current config
+        # This avoids deepcopy issues with quantized parameters
+        candidate_model = ResNet20().to('cpu')
+        candidate_model.load_state_dict(self.base_model.state_dict())
+
+        # Apply current quantization config
+        for layer, bits in self.current_config.items():
+            if bits < 32:
+                candidate_model = quantize_layer(candidate_model, layer, bits)
 
         # Quantize the layer
         candidate_model = quantize_layer(candidate_model, layer_name, num_bits)
