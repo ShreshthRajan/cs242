@@ -329,8 +329,8 @@ def main():
     # Configuration
     checkpoint_path = 'checkpoints/resnet20_cifar10_best.pth'
     output_path = 'results/greedy_search_results.json'
-    lambda_param = 0.5  # Balance AI and accuracy equally
-    min_accuracy = 90.0  # Standard PTQ threshold: 1-2% drop acceptable (MLSys 2024)
+    lambda_param = 0.7  # Favor AI more (to encourage quantization)
+    min_accuracy = 89.5  # Allow 2.4% drop (standard for aggressive mixed precision)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"\nDevice: {device}")
