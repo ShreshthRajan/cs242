@@ -26,6 +26,12 @@ from models.resnet import ResNet20
 from utils.ai_calculator import AICalculator
 from utils.quantization import quantize_layer, get_quantizable_layers
 
+# Greedy search hyperparameters
+LAMBDA = 0.9  # Tradeoff: 0=accuracy only, 1=AI only (0.9=heavily favor AI)
+MIN_ACCURACY = 89.5  # Minimum acceptable accuracy threshold (%)
+MAX_ITERATIONS = 20  # Maximum greedy iterations
+BITWIDTH_OPTIONS = [8, 4]  # Try 8-bit before 4-bit
+
 
 class GreedyQuantizationSearch:
     """
@@ -367,8 +373,6 @@ def main():
     # Configuration
     checkpoint_path = 'checkpoints/resnet20_cifar10_best.pth'
     output_path = 'results/greedy_search_results.json'
-    lambda_param = 0.9  # Heavily favor AI (to encourage multi-layer quantization)
-    min_accuracy = 89.5  # Allow 2.4% drop (standard for aggressive mixed precision)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"\nDevice: {device}")
@@ -384,14 +388,14 @@ def main():
         checkpoint_path=checkpoint_path,
         testloader=testloader,
         device=device,
-        lambda_param=lambda_param,
-        bitwidth_options=[8, 4]  # Try 8-bit first, then 4-bit
+        lambda_param=LAMBDA,
+        bitwidth_options=BITWIDTH_OPTIONS
     )
 
     start_time = time.time()
     results = searcher.search(
-        max_iterations=20,
-        min_accuracy=min_accuracy
+        max_iterations=MAX_ITERATIONS,
+        min_accuracy=MIN_ACCURACY
     )
     elapsed = time.time() - start_time
 

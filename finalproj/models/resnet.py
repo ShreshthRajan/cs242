@@ -17,6 +17,7 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
+        """Initialize BasicBlock with conv layers and skip connection"""
         super(BasicBlock, self).__init__()
         # First conv: 3x3, stride may downsample
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3,
@@ -39,14 +40,11 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        # Main path
+        """Forward pass: conv layers + skip connection"""
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
-
-        # Add skip connection
         out += self.shortcut(x)
         out = F.relu(out)
-
         return out
 
 
@@ -55,6 +53,7 @@ class ResNet(nn.Module):
     ResNet for CIFAR-10 (32x32 images, 10 classes)
     """
     def __init__(self, block, num_blocks, num_classes=10):
+        """Initialize ResNet with specified block type and layer counts"""
         super(ResNet, self).__init__()
         self.in_planes = 16
 
@@ -83,19 +82,14 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # Initial conv
+        """Forward pass through ResNet"""
         out = F.relu(self.bn1(self.conv1(x)))
-
-        # Three stages
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
-
-        # Global average pooling + classifier
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-
         return out
 
 
