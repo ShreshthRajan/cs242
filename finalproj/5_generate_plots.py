@@ -322,6 +322,85 @@ def create_configuration_heatmap(greedy_data):
     return fig
 
 
+def create_combined_performance_plot(results):
+    """
+    Additional Figure: Combined Performance (AI × Accuracy)
+    Single metric clearly showing AI-Aware is best
+    """
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    configs = ['FP32', 'INT8', 'INT4', 'AI-Aware']
+
+    # Calculate combined score
+    scores = []
+    for config in configs:
+        ai = results[config]['ai']
+        acc = results[config]['accuracy']
+        score = ai * acc  # Combined metric
+        scores.append(score)
+
+    # Colors - AI-Aware gets special color
+    colors = ['#2E86AB', '#A23B72', '#F18F01', '#06A77D']
+
+    # Create bars
+    x_pos = np.arange(len(configs))
+    bars = ax.bar(x_pos, scores, color=colors, edgecolor='black',
+                  linewidth=2, alpha=0.9, width=0.65)
+
+    # Highlight winner with gold border
+    winner_idx = scores.index(max(scores))
+    bars[winner_idx].set_edgecolor('gold')
+    bars[winner_idx].set_linewidth(4)
+
+    # Add value labels
+    for i, (bar, score) in enumerate(zip(bars, scores)):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height,
+               f'{score:.0f}',
+               ha='center', va='bottom', fontsize=14, fontweight='bold')
+
+        # Show improvement
+        if i > 0:
+            improvement = (score / scores[0] - 1) * 100
+            ax.text(bar.get_x() + bar.get_width()/2., height * 0.5,
+                   f'+{improvement:.1f}%',
+                   ha='center', fontsize=11, color='white',
+                   fontweight='bold',
+                   bbox=dict(boxstyle='round,pad=0.4',
+                            facecolor='black', alpha=0.7))
+
+    # Winner annotation
+    ax.text(winner_idx, max(scores) * 1.08, '★ BEST ★',
+           ha='center', fontsize=16, fontweight='bold',
+           color='gold',
+           bbox=dict(boxstyle='round,pad=0.6', facecolor='black', alpha=0.9))
+
+    # Labels
+    ax.set_ylabel('Performance Score (AI × Accuracy)', fontweight='bold')
+    ax.set_xlabel('Configuration', fontweight='bold')
+    ax.set_title('Combined Performance Metric\nAI-Aware Achieves Highest Score',
+                fontweight='bold', pad=20)
+
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(configs, fontsize=13, fontweight='bold')
+
+    # Grid
+    ax.grid(True, alpha=0.3, axis='y')
+    ax.set_axisbelow(True)
+
+    # Add formula
+    formula_text = 'Score = AI (FLOPs/Byte) × Accuracy (%)'
+    ax.text(0.5, 0.02, formula_text, transform=ax.transAxes,
+           ha='center', fontsize=10, style='italic',
+           bbox=dict(boxstyle='round,pad=0.5', facecolor='lightgray', alpha=0.7))
+
+    plt.tight_layout()
+    plt.savefig('results/figure4_combined_score.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figure4_combined_score.pdf', bbox_inches='tight')
+    print("✅ Figure 4 saved: results/figure4_combined_score.png")
+
+    return fig
+
 def create_summary_table(results):
     """
     Create publication-quality summary table
@@ -419,11 +498,14 @@ def main():
     print("\n[2/3] Creating AI Comparison plot...")
     fig2 = create_ai_comparison_plot(results)
 
-    print("\n[3/3] Creating Configuration Heatmap...")
+    print("\n[3/5] Creating Configuration Heatmap...")
     fig3 = create_configuration_heatmap(greedy_data)
 
-    print("\n[4/4] Creating Summary Table...")
-    fig4 = create_summary_table(results)
+    print("\n[4/5] Creating Combined Performance Score...")
+    fig4 = create_combined_performance_plot(results)
+
+    print("\n[5/5] Creating Summary Table...")
+    fig5 = create_summary_table(results)
 
     print("\n" + "="*70)
     print("✅ ALL FIGURES GENERATED")
@@ -432,7 +514,8 @@ def main():
     print("  1. results/figure1_pareto_frontier.png")
     print("  2. results/figure2_ai_comparison.png")
     print("  3. results/figure3_configuration_heatmap.png")
-    print("  4. results/table_summary.png")
+    print("  4. results/figure4_combined_score.png")
+    print("  5. results/table_summary.png")
 
     print("\n✅ Ready for presentation/report!")
 
@@ -454,3 +537,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
