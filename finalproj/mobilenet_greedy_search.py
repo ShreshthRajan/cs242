@@ -28,7 +28,7 @@ from utils.quantization import quantize_layer, get_quantizable_layers
 
 # Greedy search hyperparameters
 LAMBDA = 0.9  # Tradeoff: 0=accuracy only, 1=AI only (0.9=heavily favor AI)
-MIN_ACCURACY = 89.5  # Minimum acceptable accuracy threshold (%)
+MIN_ACCURACY = 80.0  # Minimum acceptable accuracy threshold (%) - adjusted for MobileNet
 MAX_ITERATIONS = 20  # Maximum greedy iterations
 BITWIDTH_OPTIONS = [8, 4]  # Try 8-bit before 4-bit
 
