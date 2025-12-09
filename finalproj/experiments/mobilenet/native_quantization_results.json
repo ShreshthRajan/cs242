@@ -1,0 +1,16 @@
+{
+  "fp32": {
+    "accuracy": 82.05,
+    "throughput": 1396.5345152519626
+  },
+  "random": {
+    "accuracy": 81.72,
+    "throughput": 2170.1005384944933,
+    "speedup": 1.5539182990425153
+  },
+  "aiaware": {
+    "accuracy": 81.11,
+    "throughput": 2320.564395361547,
+    "speedup": 1.66165917850077
+  }
+}
